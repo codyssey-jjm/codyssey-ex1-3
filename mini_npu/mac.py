@@ -8,6 +8,7 @@ def validate_square_matrix(matrix: Matrix) -> int:
     if not matrix:
         raise ValueError("행렬은 비어 있을 수 없습니다.")
 
+    # 행 개수를 기준으로 모든 행의 열 개수를 확인한다.
     size = len(matrix)
     for row in matrix:
         if len(row) != size:
@@ -21,9 +22,11 @@ def calculate_mac(pattern: Matrix, filter_matrix: Matrix) -> float:
     pattern_size = validate_square_matrix(pattern)
     filter_size = validate_square_matrix(filter_matrix)
 
+    # 같은 위치끼리 계산할 수 있도록 두 행렬의 크기를 확인한다.
     if pattern_size != filter_size:
         raise ValueError("패턴과 필터의 크기가 같아야 합니다.")
 
+    # 패턴과 필터의 같은 위치 값을 곱해 점수에 누적한다.
     score = 0.0
     for row in range(pattern_size):
         for column in range(pattern_size):
@@ -43,6 +46,7 @@ def select_label(
     if epsilon < 0:
         raise ValueError("epsilon은 음수일 수 없습니다.")
 
+    # 점수 순서와 관계없이 차이가 허용오차 안인지 확인한다.
     difference = abs(score_a - score_b)
     if difference == 0 or difference < epsilon:
         return UNDECIDED
