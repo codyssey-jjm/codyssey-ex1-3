@@ -8,13 +8,15 @@ from .models import UNDECIDED, Matrix
 
 INPUT_SIZE = 3
 
-
+# 함수 이름 앞에 _는 현재 모듈 내부에서만 사용하는 함수라는 Python에서의 관례
+# Java의 private처럼 접근을 강제로 막지는 않는다.
 def _input_error_message(size: int) -> str:
     return f"입력 형식 오류: 각 줄에 {size}개의 숫자를 공백으로 구분해 입력하세요."
 
 
 def parse_row(raw_value: str, size: int = INPUT_SIZE) -> List[float]:
     """공백으로 구분된 한 줄을 정해진 개수의 실수로 변환한다."""
+    # 인자 없는 split()은 앞뒤 공백과 연속 공백을 자동으로 제거한다.
     values = raw_value.split()
     if len(values) != size:
         raise ValueError(_input_error_message(size))
@@ -22,6 +24,7 @@ def parse_row(raw_value: str, size: int = INPUT_SIZE) -> List[float]:
     try:
         return [float(value) for value in values]
     except ValueError:
+        # 숫자 변환 오류도 열 개수 오류와 동일한 사용자 안내 문구로 처리한다.
         raise ValueError(_input_error_message(size)) from None
 
 
@@ -51,6 +54,7 @@ def run_manual_mode() -> None:
     print("\n[2] 패턴 입력")
     pattern = read_matrix("패턴")
 
+    # 하나의 패턴을 필터 A와 B에 각각 적용해 비교할 점수를 계산한다.
     score_a = calculate_mac(pattern, filter_a)
     score_b = calculate_mac(pattern, filter_b)
     result = select_label(score_a, score_b, "A", "B")
