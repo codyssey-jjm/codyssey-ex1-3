@@ -3,7 +3,7 @@
 import time
 from typing import Any, Dict, List, Tuple
 
-from .mac import calculate_mac
+from .mac import calculate_mac, calculate_mac_flat, flatten_matrix
 from .models import Matrix
 
 # 반복 횟수 상수: MAC 연산을 몇 번 반복 측정할지 정한 값
@@ -51,20 +51,53 @@ def measure_mac_performance(
     }
 
 
+def compare_mac_performance(
+    pattern: Matrix,
+    filter_matrix: Matrix,
+) -> Dict[str, Any]:
+    """같은 입력으로 2차원과 1차원 MAC의 평균 실행 시간을 비교한다."""
+    # 1차원 변환은 MAC 접근 성능과 별개의 준비 과정이므로 측정 전에 수행한다.
+    flat_pattern = flatten_matrix(pattern)
+    flat_filter = flatten_matrix(filter_matrix)
+
+    matrix_score = 0.0
+    matrix_start_time = time.perf_counter()
+    for _ in range(MEASUREMENT_REPETITIONS):
+        matrix_score = calculate_mac(pattern, filter_matrix)
+    matrix_elapsed_seconds = time.perf_counter() - matrix_start_time
+
+    flat_score = 0.0
+    flat_start_time = time.perf_counter()
+    for _ in range(MEASUREMENT_REPETITIONS):
+        flat_score = calculate_mac_flat(flat_pattern, flat_filter)
+    flat_elapsed_seconds = time.perf_counter() - flat_start_time
+
+    # 변환 후에도 기존 2차원 MAC과 같은 결과가 나오는지 확인한다.
+    if matrix_score != flat_score:
+        raise ValueError("2차원 MAC과 1차원 MAC의 점수가 다릅니다.")
+
+    size = len(pattern)
+    return {
+        "size": size,
+        "matrix_average_ms": (
+            matrix_elapsed_seconds * 1000 / MEASUREMENT_REPETITIONS
+        ),
+        "flat_average_ms": flat_elapsed_seconds * 1000 / MEASUREMENT_REPETITIONS,
+        "operation_count": size * size,
+    }
+
+
 def measure_sizes(
     samples: Dict[int, Tuple[Matrix, Matrix]],
 ) -> List[Dict[str, Any]]:
-    """
-        samples에는 크기별 패던과 필터가 들어 있다
-    """
-    """여러 크기의 MAC 성능을 측정해 크기가 작은 순서로 반환한다."""
+    """여러 크기의 2차원·1차원 MAC 성능을 작은 크기 순서로 반환한다."""
     results: List[Dict[str, Any]] = []
 
-    # sorted() 사용시 키 값이 작은 순서로 정렬
+    # samples에는 크기별 패턴과 필터가 들어 있으며, 키가 작은 순서로 측정한다.
     for size in sorted(samples):
         # 현재 크기에 해당하는 패턴과 필터 쌍을 가져온다
         pattern, filter_matrix = samples[size]
-        # 크기별 성능 측정 실행
-        results.append(measure_mac_performance(pattern, filter_matrix))
+        # 같은 입력으로 기존 2차원 방식과 새 1차원 방식을 함께 측정한다.
+        results.append(compare_mac_performance(pattern, filter_matrix))
 
     return results
