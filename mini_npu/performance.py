@@ -9,6 +9,19 @@ from .models import Matrix
 # 반복 횟수 상수: MAC 연산을 몇 번 반복 측정할지 정한 값
 MEASUREMENT_REPETITIONS = 10
 
+# data.json에 없는 3×3 성능 측정에 사용하는 기본 Cross 패턴과 필터
+CROSS_PATTERN_3: Matrix = [
+    [0.0, 1.0, 0.0],
+    [1.0, 1.0, 1.0],
+    [0.0, 1.0, 0.0],
+]
+
+CROSS_FILTER_3: Matrix = [
+    [0.0, 1.0, 0.0],
+    [1.0, 1.0, 1.0],
+    [0.0, 1.0, 0.0],
+]
+
 
 def measure_mac_performance(
     pattern: Matrix,

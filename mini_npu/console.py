@@ -1,9 +1,19 @@
 """3×3 사용자 입력 모드와 콘솔 출력 기능."""
 
-from typing import List
+import json
+from pathlib import Path
+from typing import Any, Dict, List, Tuple
 
+from .data_loader import build_pattern_case, load_json_data
 from .mac import calculate_mac, select_label
 from .models import UNDECIDED, Matrix
+from .performance import (
+    CROSS_FILTER_3,
+    CROSS_PATTERN_3,
+    measure_mac_performance,
+    measure_sizes,
+)
+from .report import analyze_patterns
 
 
 INPUT_SIZE = 3
@@ -58,6 +68,9 @@ def run_manual_mode() -> None:
     score_a = calculate_mac(pattern, filter_a)
     score_b = calculate_mac(pattern, filter_b)
     result = select_label(score_a, score_b, "A", "B")
+    
+    # 입력받은 패턴과 필터A를 사용해 평균시간 측정
+    performance = measure_mac_performance(pattern, filter_a)
 
     # 내부 표준값은 사용자 입력 모드에 맞는 한글 문구로 바꾼다.
     displayed_result = "판정 불가" if result == UNDECIDED else result
@@ -66,3 +79,90 @@ def run_manual_mode() -> None:
     print(f"A 점수: {score_a}")
     print(f"B 점수: {score_b}")
     print(f"판정: {displayed_result}")
+    print(f"연산 시간(평균/10회): {performance['average_ms']} ms")
+
+
+def run_json_mode(path: Path) -> None:
+    """JSON 패턴을 분석하고 성능 및 전체 결과를 출력한다."""
+    try:
+        data = load_json_data(path)
+    except FileNotFoundError:               # 파일이 없는 경우
+        print(f"파일 오류: '{path}' 파일을 찾을 수 없습니다.")
+        return
+    except json.JSONDecodeError as error:   # JSON 문법이 잘못된 경우
+        print(f"JSON 형식 오류: {error}")
+        return
+    except ValueError as error:             # 최상위 필터 또는 패턴 구조가 잘못된 경우
+        print(f"JSON 구조 오류: {error}")
+        return
+
+    summary = analyze_patterns(data)
+
+    print("\n[1] 패턴 분석")
+    # summary["results"]에는 정상 계산 결과와 검증 오류 결과가 모두 들어 있다.
+    for result in summary["results"]:
+        print(f"\n--- {result['identifier']} ---")
+        status = "PASS" if result["passed"] else "FAIL"
+
+        # 정상 계산 결과에는 두 점수와 판정이 들어 있다.
+        # 검증 중 오류가 난 결과에는 cross_score가 없으므로 FAIL과 사유만 출력한다.
+        if "cross_score" in result:
+            print(f"Cross 점수: {result['cross_score']}")
+            print(f"X 점수: {result['x_score']}")
+            print(
+                f"판정: {result['prediction']} | "
+                f"expected: {result['expected']} | {status}"
+            )
+        else:
+            print(f"결과: {status}")
+
+        if not result["passed"]:
+            print(f"사유: {result['reason']}")
+
+    # data.json에는 3×3 데이터가 없으므로 performance.py의 기본 3×3 샘플을 사용한다.
+    samples: Dict[int, Tuple[Matrix, Matrix]] = {
+        3: (CROSS_PATTERN_3, CROSS_FILTER_3),
+    }
+
+    raw_filters = data["filters"]
+    # 각 크기에서 처음 검증을 통과한 패턴과 Cross 필터 한 쌍만 측정에 사용한다.
+    for identifier, raw_case in data["patterns"].items():
+        try:
+            case = build_pattern_case(identifier, raw_case, raw_filters)
+        except ValueError:
+            # 잘못된 케이스는 성능 측정 샘플로 사용할 수 없으므로 건너뛴다.
+            continue
+
+        size = case["size"]
+        # 같은 크기의 샘플이 이미 있으면 중복해서 측정하지 않는다.
+        if size not in samples:
+            samples[size] = (case["pattern"], case["cross_filter"])
+
+    # 준비한 크기별 샘플을 각각 10회 측정하고 평균 시간을 구한다.
+    performance_results = measure_sizes(samples)
+
+    print("\n[2] 성능 분석 (평균/10회)")
+    print("크기       평균 시간(ms)    연산 횟수")
+    # 성능 결과는 measure_sizes()에서 크기가 작은 순서로 정렬되어 있다.
+    for result in performance_results:
+        size = result["size"]
+        print(
+            f"{size}×{size:<6} "
+            f"{result['average_ms']:<16} "
+            f"{result['operation_count']}"
+        )
+
+    # analyze_patterns()에서 집계한 전체, 통과, 실패 개수를 출력한다.
+    print("\n[3] 결과 요약")
+    print(f"총 테스트: {summary['total']}개")
+    print(f"통과: {summary['passed']}개")
+    print(f"실패: {summary['failed']}개")
+
+    # 전체 결과 중 실패한 항목만 골라 실패 케이스 목록을 만든다.
+    failed_results: List[Dict[str, Any]] = [
+        result for result in summary["results"] if not result["passed"]
+    ]
+    if failed_results:
+        print("\n실패 케이스:")
+        for result in failed_results:
+            print(f"- {result['identifier']}: {result['reason']}")
