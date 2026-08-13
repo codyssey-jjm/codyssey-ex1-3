@@ -147,9 +147,9 @@ def run_json_mode(path: Path) -> None:
     for result in performance_results:
         size = result["size"]
         print(
-            f"{size}×{size:<6} "
-            f"{result['average_ms']:<16} "
-            f"{result['operation_count']}"
+            f"{size:>2}×{size:<2} "
+            f"{result['average_ms']:>16.3f} "
+            f"{result['operation_count']:>12}"
         )
 
     # analyze_patterns()에서 집계한 전체, 통과, 실패 개수를 출력한다.
