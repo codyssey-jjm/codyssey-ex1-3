@@ -1,5 +1,7 @@
 """행렬 검증, MAC 연산 및 점수 판정 기능."""
 
+from typing import List
+
 from .models import EPSILON, UNDECIDED, Matrix
 
 
@@ -31,6 +33,33 @@ def calculate_mac(pattern: Matrix, filter_matrix: Matrix) -> float:
     for row in range(pattern_size):
         for column in range(pattern_size):
             score += pattern[row][column] * filter_matrix[row][column]
+
+    return score
+
+
+def flatten_matrix(matrix: Matrix) -> List[float]:
+    """정사각형 2차원 행렬을 행 순서의 1차원 리스트로 변환한다."""
+    validate_square_matrix(matrix)
+
+    flattened: List[float] = []
+    for row in matrix:
+        for value in row:
+            flattened.append(value)
+
+    return flattened
+
+
+def calculate_mac_flat(
+    pattern: List[float],
+    filter_values: List[float],
+) -> float:
+    """두 1차원 배열의 같은 위치 값을 곱해 누적한 MAC 점수를 반환한다."""
+    if len(pattern) != len(filter_values):
+        raise ValueError("패턴과 필터의 길이가 같아야 합니다.")
+
+    score = 0.0
+    for index in range(len(pattern)):
+        score += pattern[index] * filter_values[index]
 
     return score
 

@@ -138,17 +138,18 @@ def run_json_mode(path: Path) -> None:
         if size not in samples:
             samples[size] = (case["pattern"], case["cross_filter"])
 
-    # 준비한 크기별 샘플을 각각 10회 측정하고 평균 시간을 구한다.
+    # 준비한 크기별 샘플로 2차원·1차원 MAC을 각각 10회 측정한다.
     performance_results = measure_sizes(samples)
 
     print("\n[2] 성능 분석 (평균/10회)")
-    print("크기       평균 시간(ms)    연산 횟수")
+    print("크기    2차원 평균(ms)    1차원 평균(ms)    연산 횟수")
     # 성능 결과는 measure_sizes()에서 크기가 작은 순서로 정렬되어 있다.
     for result in performance_results:
         size = result["size"]
         print(
             f"{size:>2}×{size:<2} "
-            f"{result['average_ms']:>16.3f} "
+            f"{result['matrix_average_ms']:>16.3f} "
+            f"{result['flat_average_ms']:>17.3f} "
             f"{result['operation_count']:>12}"
         )
 
