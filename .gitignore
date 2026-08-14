@@ -3,4 +3,4 @@ AGENTS.md
 plan/
 __pycache__/
 *.py[cod]
-readonly.md
+readonly/

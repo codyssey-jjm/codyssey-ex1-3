@@ -90,6 +90,33 @@ B 점수: 5.0
 
 한 케이스에서 스키마 또는 크기 오류가 발생하더라도 해당 케이스만 FAIL로 기록하고 다음 케이스 분석을 계속한다.
 
+## Python 파일 구조
+
+```text
+main.py
+mini_npu/
+├── __init__.py
+├── console.py
+├── data_loader.py
+├── mac.py
+├── models.py
+├── pattern_generator.py
+├── performance.py
+└── report.py
+```
+
+| 파일 | 역할 |
+|---|---|
+| `main.py` | 프로그램을 시작하고 사용자 입력에 따라 모드 1 또는 모드 2를 실행한다. |
+| `mini_npu/__init__.py` | `mini_npu` 디렉터리를 Python 패키지로 구분한다. |
+| `mini_npu/console.py` | 3×3 사용자 입력을 처리하고 모드별 계산 결과와 성능 표를 출력한다. |
+| `mini_npu/data_loader.py` | `data.json`을 읽고 행렬과 스키마를 검증하며 라벨을 `Cross`와 `X`로 정규화한다. |
+| `mini_npu/mac.py` | 정사각형 행렬을 검증하고 2차원·1차원 MAC 점수와 epsilon 기반 판정을 계산한다. |
+| `mini_npu/models.py` | `Matrix` 타입과 `EPSILON`, `UNDECIDED` 같은 공통 상수를 정의한다. |
+| `mini_npu/pattern_generator.py` | 크기 N에 맞는 Cross와 X 패턴을 자동으로 생성한다. |
+| `mini_npu/performance.py` | MAC 연산을 반복 측정하고 2차원·1차원 방식의 평균 실행 시간을 비교한다. |
+| `mini_npu/report.py` | JSON 케이스별 점수와 PASS/FAIL을 계산하고 전체 결과를 집계한다. |
+
 ## 구현 요약
 
 ### MAC 연산
